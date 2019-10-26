@@ -50,7 +50,8 @@ class actor:
     def afterTrades(self):
         if (self.inv[0] < 0):
             #starve
-            self.dead = True;
+            #self.dead = True;
+            self.type = 0;
         elif (self.inv[2] < 0 and self.type == 3):
             self.type = 0;
         elif (self.type == 0 and self.gold > 10):
@@ -59,6 +60,9 @@ class actor:
             self.type = 2;
         elif (self.gold > 30):
             self.type = 3;
+            
+        if (self.type == 0):
+            self.inv[0] = 0;
             
     def getValue(self, t, lastPrices):
         # Always buy food if you're going to starve
