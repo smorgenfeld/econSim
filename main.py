@@ -10,13 +10,14 @@ def main():
     actors = [];
     for i in range(45):
         actors.append(actor.actor(5));
-    for i in range(5):
+    for i in range(15):
         actors.append(actor.actor(15));
     
     lastPrices = [1,1,1];
     curPrices = [1,1,1];
     allPrices = [[],[],[]]
-    for i in range(100):
+    allPops = [[],[],[],[]]
+    for i in range(1000):
         for a in actors:
             a.beforeTrades();
         
@@ -34,7 +35,7 @@ def main():
                     if (a.type == 0):
                         # base food cost roughly on last round's food cost, plus some random variation
                         # (farmers should never starve)
-                        prodCosts.extend([[max(lastPrices[0] + r.randint(-2, 2), 1), a]] * max(a.inv[0] - 1, 1));
+                        prodCosts.extend([[max(lastPrices[0] + r.randint(-200, 2), 1), a]] * max(a.inv[0] - 1, 1));
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
                 # tool auction
@@ -44,7 +45,7 @@ def main():
                         # some random markup/down based on previous sell price
                         numToSell = max(a.inv[1] - 1, 1);
                         if (numToSell != 0):
-                            prodCost = max((lastPrices[0]) / numToSell, 0);
+                            prodCost = int(max((lastPrices[0]) / numToSell, 0));
                             prodCosts.extend([[randint(prodCost, lastPrices[1] + 5), a]] * numToSell);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
@@ -55,7 +56,7 @@ def main():
                         # plus some random markup/down based on last sell price
                         numToSell = max(a.inv[2] - 1, 0);
                         if (numToSell != 0):
-                            prodCost = max((lastPrices[0] + lastPrices[1]) / numToSell, 1);
+                            prodCost = int(max((lastPrices[0] + lastPrices[1]) / numToSell, 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[2] + 5), a]] * numToSell);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
@@ -107,7 +108,7 @@ def main():
                 del a;
         lastPrices = curPrices;
         
-        print(lastPrices);
+        #print(lastPrices);
         tGold = 0;
         fGold = 0;
         sGold = 0;
@@ -125,16 +126,20 @@ def main():
                 jGold += kek.gold;
             elif (kek.type == 3):
                 nGold += kek.gold;
-        print(tGold);
-        print(pop);
-        print("Farmer gold: " + str(fGold));
-        print("Smith gold: " + str(sGold));
-        print("Jeweler gold: " + str(jGold));
-        print("Noble gold: " + str(nGold));
-        print()
-    plt.plot(allPrices[0]);
-    plt.plot(allPrices[1])
-    plt.plot(allPrices[2])
+        #print(tGold);
+        #print(pop);
+        for n in range(4):
+            allPops[n].append(pop[n])
+        #print("Farmer gold: " + str(fGold));
+        #print("Smith gold: " + str(sGold));
+        #print("Jeweler gold: " + str(jGold));
+        #print("Noble gold: " + str(nGold));
+        #print()
+    for i in range(3):
+        plt.plot(allPrices[i]);
+    plt.show();
+    for i in range(4):
+        plt.plot(allPops[i]);
     plt.show();
         
 

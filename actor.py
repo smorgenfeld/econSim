@@ -16,7 +16,7 @@ class actor:
         # Production values without tools
         self.nTP = [2, 1, 0, 0];
         # Production values while consuming one tool
-        self.yTP = [4, 2, 1, 0];
+        self.yTP = [10, 2, 1, 0];
         
     def beforeTrades(self):
         self.inv[0] -= 1;
