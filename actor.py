@@ -16,7 +16,7 @@ class actor:
         # Production values without tools
         self.nTP = [2, 1, 0, 0];
         # Production values while consuming one tool
-        self.yTP = [10, 2, 1, 0];
+        self.yTP = [6, 3, 1, 0];
         
     def beforeTrades(self):
         self.inv[0] -= 1;
@@ -47,18 +47,23 @@ class actor:
         elif (self.type == 3):
             self.inv[2] -= 1;
             
-    def afterTrades(self):
+    def afterTrades(self, lastPrice, movements):
         if (self.inv[0] < 0):
             #starve
             #self.dead = True;
-            self.type = 0;
+            self.type -= 1;
+            movements[0][-1] += 1;
         elif (self.inv[2] < 0 and self.type == 3):
+            movements[1][-1] += 1;
             self.type = 0;
-        elif (self.type == 0 and self.gold > 10):
+        elif (self.type == 0 and self.gold > 10 and lastPrice[1] >= lastPrice[0]):
+            movements[2][-1] += 1;
             self.type = 1;
-        elif (self.type == 1 and self.gold > 20):
+        elif (self.type == 1 and self.gold > 20 and lastPrice[2] >= lastPrice[1]):
+            movements[3][-1] += 1;
             self.type = 2;
         elif (self.gold > 30):
+            movements[4][-1] += 1;
             self.type = 3;
             
         if (self.type == 0):
@@ -71,7 +76,7 @@ class actor:
         # Always buy tools if it's worth it, based on last price of produced good
         if (t == 1 and self.inv[1] < 1 and self.type != 3):
             return min(self.gold, (self.yTP[self.type] - self.nTP[self.type]) * lastPrices[self.type]);
-        # Always buy luxery goods if you're a sink
+        # Always buy luxury goods if you're a sink
         if (t == 2 and self.inv[2] < 1):
             return self.gold;
         #print("Shouldn't get here (t value of " + str(t) + ")");

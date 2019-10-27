@@ -8,20 +8,22 @@ import actor, good, random as r, matplotlib.pyplot as plt, numpy as np;
 
 def main():
     actors = [];
-    for i in range(45):
+    for i in range(50):
         actors.append(actor.actor(5));
-    for i in range(15):
+    for i in range(50):
         actors.append(actor.actor(15));
     
     lastPrices = [1,1,1];
     curPrices = [1,1,1];
     allPrices = [[],[],[]]
     allPops = [[],[],[],[]]
-    for i in range(1000):
+    allSold = [[],[],[]]
+    movements = [[],[],[],[],[]]
+    for i in range(200):
         for a in actors:
             a.beforeTrades();
         
-        # Run auctions for food, tools and luxery goods, in that order
+        # Run auctions for food, tools and luxury goods, in that order
         prodCosts = [];
         buyerValues = [];
         
@@ -35,7 +37,7 @@ def main():
                     if (a.type == 0):
                         # base food cost roughly on last round's food cost, plus some random variation
                         # (farmers should never starve)
-                        prodCosts.extend([[max(lastPrices[0] + r.randint(-200, 2), 1), a]] * max(a.inv[0] - 1, 1));
+                        prodCosts.extend([[max(lastPrices[0] + r.randint(-2,2), 1), a]] * max(a.inv[0] - 1, 1));
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
                 # tool auction
@@ -49,10 +51,10 @@ def main():
                             prodCosts.extend([[randint(prodCost, lastPrices[1] + 5), a]] * numToSell);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
-                # luxery auction
+                # luxury auction
                 else: # j == 2
                     if (a.type == 2):
-                        # Set luxery production cost to be based on last round food and tool price,
+                        # Set luxury production cost to be based on last round food and tool price,
                         # plus some random markup/down based on last sell price
                         numToSell = max(a.inv[2] - 1, 0);
                         if (numToSell != 0):
@@ -61,6 +63,8 @@ def main():
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
             if (len(buyerValues) == 0 or len(prodCosts) == 0):
+                allPrices[j].append(curPrices[j]);
+                allSold[j].append(0);
                 break;
             # Arrange production costs from low to high
             bubble_sort(prodCosts);
@@ -68,7 +72,7 @@ def main():
             #print(prodCosts);
             # equate costs & values list lengths by removing lowest buyer bids
             # or highest seller bids
-            print(str(len(buyerValues)) + " " + str(len(prodCosts)))
+            #print(str(len(buyerValues)) + " " + str(len(prodCosts)))
             if (len(prodCosts) < len(buyerValues)):
                 buyerValues = buyerValues[len(buyerValues) - len(prodCosts):];
             elif (len(prodCosts) > len(buyerValues)):
@@ -77,8 +81,8 @@ def main():
             # Arrange buyer bids from high to low
             buyerValues.reverse();
             
-            printl(buyerValues);
-            printl(prodCosts);
+            #printl(buyerValues);
+            #printl(prodCosts);
             
             # Get price for good j (use buyervalues to set price for both buyers
             # and sellers, to prevent incentives from adding/removing gold from economy)
@@ -86,10 +90,11 @@ def main():
             for k in range(len(prodCosts) - 1):
                 if (prodCosts[k][0] <= buyerValues[k][0] and prodCosts[k + 1][0] > buyerValues[k + 1][0]):
                     break;
-            curPrices[j] = buyerValues[k][0];
+            curPrices[j] = prodCosts[k][0];
             allPrices[j].append(curPrices[j]);
             
             # Complete trades
+            totSold = 0;
             for b in range(len(buyerValues)):
                 if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                     buyerValues[b][1].gold -= curPrices[j];
@@ -99,9 +104,12 @@ def main():
                     prodCosts[b][1].gold += curPrices[j];
                     prodCosts[b][1].inv[j] -= 1;
                     assert(prodCosts[b][1].inv[j] >= 0);
-        
+                    totSold += 1;
+            allSold[j].append(totSold);
+        for n in range(5):
+            movements[n].append(0);
         for a in actors:
-            a.afterTrades();
+            a.afterTrades(lastPrices, movements);
             if (a.dead):
                 actors.remove(a);
                 print("d");
@@ -135,11 +143,25 @@ def main():
         #print("Jeweler gold: " + str(jGold));
         #print("Noble gold: " + str(nGold));
         #print()
+    lbs = ["Food", "Tools", "Luxury"];
     for i in range(3):
-        plt.plot(allPrices[i]);
+        plt.plot(allPrices[i], label = ("Price of " + lbs[i]));
+    plt.legend();
     plt.show();
+    lbs = ["Food", "Tools", "Luxury"];
+    for i in range(3):
+        plt.plot(allSold[i], label = ("Units sold: " + lbs[i]));
+    plt.legend();
+    plt.show();
+    lbs = ["Farmers", "Smiths", "Jewelers", "Nobles"];
     for i in range(4):
-        plt.plot(allPops[i]);
+        plt.plot(allPops[i],label = lbs[i]);
+    plt.legend();
+    plt.show();
+    lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
+    for i in range(5):
+        plt.plot(movements[i],label = lbs[i]);
+    plt.legend();
     plt.show();
         
 
