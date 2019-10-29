@@ -11,11 +11,11 @@ def main():
     actors = [];
     for i in range(100):
         actors.append(actor.actor(100));
-    for i in range(10):
-        actors.append(actor.actor(300, 2));
-    for i in range(10):
-        actors.append(actor.actor(500, 3));
-    totGold = 18000
+    totGold = 0;
+    totPop = 0;
+    for a in actors:
+        totGold += a.gold;
+        totPop += 1;
     
     lastPrices = [1,2,3];
     curPrices = [1,1,1];
@@ -25,14 +25,17 @@ def main():
     allProduced = [[],[],[]]
     allWanted = [[],[],[]]
     movements = [[],[],[],[],[]]
-    for i in tqdm(range(500)):
+    taxRevs = []
+    totGoldarray = [[],[],[],[],[]]
+    tax = [0.1, 0.1, 0.1];
+    for i in tqdm(range(1000)):
         for a in actors:
             a.beforeTrades(i);
         
         # Run auctions for food, tools and luxury goods, in that order
         prodCosts = [];
         buyerValues = [];
-        
+        taxRevs.append(0);
         for j in range(3):
             prodCosts.clear();
             buyerValues.clear();
@@ -43,10 +46,10 @@ def main():
                     if (a.type == 0 and a.inv[0] > 0):
                         # base food cost roughly on last round's food cost, plus some random variation
                         # (farmers should never starve)
-                        numSelling = max(a.inv[0] - 1, 0);
-                        prodCost = max(lastPrices[0] + r.randint(-2,2), 1)
+                        numSelling = max(a.inv[0], 0);
+                        prodCost = max((lastPrices[0] + r.randint(-2,2) / numSelling * (1 + tax[0])), 1)
                         if (a.lastUsedTool):
-                            prodCost = max(int(lastPrices[1] / numSelling), 1);
+                            prodCost = max(int(lastPrices[1] / numSelling * (1 + tax[0])), 1);
                         prodCosts.extend([[prodCost, a]] * numSelling);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
@@ -57,7 +60,7 @@ def main():
                         # some random markup/down based on previous sell price
                         numToSell = max(a.inv[1] - 1, 1);
                         if (numToSell != 0):
-                            prodCost = int(max((lastPrices[0]) / numToSell, 1));
+                            prodCost = int(max((lastPrices[0] + r.randint(-2,2)) / numToSell * (1 + tax[1]), 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[1] + 5), a]] * numToSell);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
@@ -68,7 +71,7 @@ def main():
                         # plus some random markup/down based on last sell price
                         numToSell = max(a.inv[2], 0);
                         if (numToSell != 0):
-                            prodCost = int(max((lastPrices[0] + lastPrices[1]) / numToSell, 1));
+                            prodCost = int(max((lastPrices[0] + lastPrices[1] + r.randint(-2,2)) / numToSell * (1 + tax[2]), 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[2] + 5), a]] * numToSell);
                     else:
                         buyerValues.append([a.getValue(j, lastPrices), a]);
@@ -119,15 +122,30 @@ def main():
                         buyerValues[b][1].inv[j] += 1;
                         assert(buyerValues[b][1].gold >= 0);
                         
-                        prodCosts[b][1].gold += curPrices[j];
+                        prodCosts[b][1].gold += curPrices[j] / (1 + tax[j]);
+                        taxRevs[-1] += curPrices[j] - curPrices[j] / (1 + tax[j]);
                         prodCosts[b][1].inv[j] -= 1;
                         assert(prodCosts[b][1].inv[j] >= 0);
                         totSold += 1;
                 allSold[j].append(totSold);
         for n in range(5):
             movements[n].append(0);
+            
+        # Distribute tax revenue (split equally among economy if no nobles)
+        noblecount = 0;
         for a in actors:
-            a.afterTrades(lastPrices, movements, totGold);
+            if (a.type == 3):
+                noblecount += 1;
+        if (noblecount == 0):
+            for a in actors:
+                a.gold += taxRevs[-1]/totPop;
+        else:
+            for a in actors:
+                if (a.type == 3):
+                    a.gold += taxRevs[-1]/noblecount;
+                    
+        for a in actors:  
+            a.afterTrades(lastPrices, movements, totGold, totPop);
             if (a.dead):
                 actors.remove(a);
                 print("d");
@@ -152,6 +170,11 @@ def main():
                 jGold += kek.gold;
             elif (kek.type == 3):
                 nGold += kek.gold;
+        totGoldarray[0].append(tGold);
+        totGoldarray[1].append(fGold);
+        totGoldarray[2].append(sGold);
+        totGoldarray[3].append(jGold);
+        totGoldarray[4].append(nGold);
         #print(tGold);
         #print(pop);
         for n in range(4):
@@ -202,6 +225,25 @@ def main():
     lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
     for i in range(5):
         plt.plot(movements[i],label = lbs[i]);
+    plt.legend();
+    plt.show();
+    
+    plt.figure(8);
+    plt.plot(taxRevs, label = "Tax Revenue")
+    plt.legend();
+    plt.show();
+    
+    plt.figure(9);
+    lbs = ["Total Gold", "Farmer Gold", "Smith Gold", "Jeweler Gold", "Noble Gold"];
+    for i in range(5):
+        plt.plot(totGoldarray[i],label = lbs[i]);
+    plt.legend();
+    plt.show();
+    
+    plt.figure(10);
+    lbs = ["Avg. Farmer Gold", "Avg. Smith Gold", "Avg. Jeweler Gold", "Avg. Noble Gold"];
+    for i in range(3):
+        plt.plot([totGoldarray[i+1][j]/max(1, allPops[i][j]) for j in range(len(allPops[i]))],label = lbs[i]);
     plt.legend();
     plt.show();
         

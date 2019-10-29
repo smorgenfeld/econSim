@@ -14,14 +14,13 @@ class actor:
         self.dead = False;
         
         # Production values without tools
-        self.nTP = [2, 1, 1, 0];
+        self.nTP = [2, 1, 0, 0];
         # Production values while consuming one tool
-        self.yTP = [4, 3, 2, 0];
+        self.yTP = [6, 3, 1, 0];
         
         self.lastUsedTool = False;
         
     def beforeTrades(self, step):
-        self.inv[0] -= 1;
         # farmer
         if (self.type == 0):
             if (self.inv[1] > 0):
@@ -58,9 +57,10 @@ class actor:
         elif (self.type == 3):
             self.inv[2] -= 1;
             self.lastUsedTool = False;
+        self.inv[0] -= 1;
        
             
-    def afterTrades(self, lastPrice, movements, totGold):
+    def afterTrades(self, lastPrice, movements, totGold, totPop):
         mod = lastPrice[0] * self.nTP[0];
         if (self.lastUsedTool):
             mod = lastPrice[0] * self.yTP[0];
@@ -70,16 +70,16 @@ class actor:
             if (self.type != 0):
                 self.type -= 1;
                 movements[0][-1] += 1;
-        elif (self.inv[2] < 0 and self.type == 3):
-            movements[1][-1] += 1;
-            self.type = 0;
-        elif (self.type == 0 and self.gold > lastPrice[0] * 3 and (lastPrice[1] * self.yTP[1] >= mod) and r.randint(0,2) == 2):
+        #elif (self.inv[2] < 0 and self.type == 3):
+            #movements[1][-1] += 1;
+            #self.type = 0;
+        elif (self.type == 0 and self.gold > lastPrice[0] * 3 and (lastPrice[1] * (self.yTP[1] - 1) >= mod) and r.randint(0,5) == 1):
             movements[2][-1] += 1;
             self.type = 1;
-        elif (self.type == 1 and self.gold > lastPrice[0] * 3 and lastPrice[2] * self.yTP[2] >= lastPrice[1]* (self.yTP[1] - 1) and r.randint(0,2)==2):
+        elif (self.type == 1 and self.gold > lastPrice[0] * 3 and lastPrice[2] * self.yTP[2] >= lastPrice[1]* (self.yTP[1] - 1) and r.randint(0,10)==10):
             movements[3][-1] += 1;
             self.type = 2;
-        elif (self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/40):
+        elif (self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
             movements[4][-1] += 1;
             self.type = 3;
             
