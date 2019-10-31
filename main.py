@@ -4,7 +4,7 @@ Created on Fri Oct 25 14:02:26 2019
 
 @author: Spencer Morgenfeld
 """
-import actor, good, random as r, matplotlib.pyplot as plt, numpy as np;
+import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
 def main():
@@ -28,7 +28,11 @@ def main():
     taxRevs = []
     nobleSpending = []
     totGoldarray = [[],[],[],[],[]]
-    tax = [0.1, 0.1, 0.1];
+    gdp = [];
+    ppp = [];
+    tax = [0,0,0];
+    toTax = [False, False, True]
+    taxes = [[],[],[]]
     for i in tqdm(range(5000)):
         for a in actors:
             a.beforeTrades(i);
@@ -38,6 +42,7 @@ def main():
         buyerValues = [];
         taxRevs.append(0);
         nobleSpending.append(0);
+        gdp.append(0);
         for j in range(3):
             prodCosts.clear();
             buyerValues.clear();
@@ -76,7 +81,12 @@ def main():
                             prodCost = int(max((lastPrices[0] + lastPrices[1] + r.randint(-2,2)) / numToSell * (1 + tax[2]), 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[2] + 5), a]] * numToSell);
                     else:
-                        buyerValues.append([a.getValue(j, lastPrices), a]);
+                        numToBuy = 1;
+                        if (a.type == 3):
+                            numToBuy = 5;
+                            buyerValues.extend([[a.getValue(j, lastPrices)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
+                        else:
+                            buyerValues.append([a.getValue(j, lastPrices), a]);
             allProduced[j].append(len(prodCosts));
             allWanted[j].append(len(buyerValues));
             if (len(buyerValues) == 0 or len(prodCosts) == 0):
@@ -121,6 +131,9 @@ def main():
                 for b in range(len(buyerValues)):
                     if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                         buyerValues[b][1].gold -= curPrices[j];
+                        # Only add food/luxury goods bought to GDP (as tools are alwyas an intermediate product)
+                        if (j != 1):
+                            gdp[-1] += curPrices[j];
                         if (buyerValues[b][1].type == 3):
                             nobleSpending[-1] += curPrices[j];
                         buyerValues[b][1].inv[j] += 1;
@@ -149,10 +162,12 @@ def main():
         
         # Adjust tax rate to support noble spending
         for taxType in range(len(tax)):
-            if (taxRevs[-1] == 0):
+            if (taxRevs[-1] == 0 and toTax[taxType]):
                 tax[taxType] = 0.1;
             else:
                 tax[taxType] *= nobleSpending[-1]/max(1.013 * taxRevs[-1],1);
+            tax[taxType] = min(tax[taxType], 1);
+            taxes[taxType].append(tax[taxType]);
                     
         for a in actors:  
             a.afterTrades(lastPrices, movements, totGold, totPop);
@@ -189,6 +204,7 @@ def main():
         #print(pop);
         for n in range(4):
             allPops[n].append(pop[n])
+        ppp.append(gdp[-1]/(totPop * max(1, lastPrices[0])))
         #print("Farmer gold: " + str(fGold));
         #print("Smith gold: " + str(sGold));
         #print("Jeweler gold: " + str(jGold));
@@ -197,51 +213,61 @@ def main():
     plt.figure(1);
     lbs = ["Food", "Tools", "Luxury"];
     for i in range(3):
-        plt.plot(allPrices[i], label = ("Price of " + lbs[i]));
+        plt.plot(ma(allPrices[i]), label = ("Price of " + lbs[i]));
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
+    
     plt.figure(2);
     lbs = ["Food", "Tools", "Luxury"];
     for i in range(3):
-        plt.plot(allSold[i], label = ("Units sold: " + lbs[i]));
+        plt.plot(ma(allSold[i]), label = ("Units sold: " + lbs[i]));
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
+    
     plt.figure(3);
     lbs = ["Farmers", "Smiths", "Jewelers", "Nobles"];
     for i in range(4):
         plt.plot(allPops[i],label = lbs[i]);
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(4);
-    plt.plot(allProduced[0], label = "Food Supply")
-    plt.plot(allWanted[0], label = "Food Demand")
+    plt.plot(ma(allProduced[0]), label = "Food Supply")
+    plt.plot(ma(allWanted[0]), label = "Food Demand")
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(5);
-    plt.plot(allProduced[1], label = "Tool Supply")
-    plt.plot(allWanted[1], label = "Tool Demand")
+    plt.plot(ma(allProduced[1]), label = "Tool Supply")
+    plt.plot(ma(allWanted[1]), label = "Tool Demand")
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(6);
     plt.plot(allProduced[2], label = "Luxury Supply")
     plt.plot(allWanted[2], label = "Luxury Demand")
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(7);
     lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
     for i in range(5):
-        plt.plot(movements[i],label = lbs[i]);
+        plt.plot(ma(movements[i]),label = lbs[i]);
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(8);
-    plt.plot(taxRevs, label = "Tax Revenue")
-    plt.plot(nobleSpending, label = "Noble Spending");
+    plt.plot(ma(taxRevs), label = "Tax Revenue")
+    plt.plot(ma(nobleSpending), label = "Noble Spending");
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(9);
@@ -249,13 +275,37 @@ def main():
     for i in range(5):
         plt.plot(totGoldarray[i],label = lbs[i]);
     plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
     
     plt.figure(10);
     lbs = ["Avg. Farmer Gold", "Avg. Smith Gold", "Avg. Jeweler Gold", "Avg. Noble Gold"];
-    for i in range(3):
-        plt.plot([totGoldarray[i+1][j]/max(1, allPops[i][j]) for j in range(len(allPops[i]))],label = lbs[i]);
+    for i in range(4):
+        plt.plot(ma([totGoldarray[i+1][j]/max(1, allPops[i][j]) for j in range(len(allPops[i]))]),label = lbs[i]);
     plt.legend();
+    plt.ylim(ymin=0);
+    plt.show();
+    
+    plt.figure(11);
+    plt.plot(ma(gdp), label = "GDP")
+    plt.plot(ma(gdp, 500), label = " Very Smoothed GDP")
+    plt.legend();
+    plt.ylim(ymin=0);
+    plt.show();
+    
+    plt.figure(12);
+    plt.plot(ma(ppp), label = "PPP")
+    plt.plot(ma(ppp, 500), label = " Very Smoothed PPP")
+    plt.legend();
+    plt.ylim(ymin=0);
+    plt.show();
+    
+    plt.figure(13);
+    lbs = ["Food Tax", "Tool Tax", "Luxury Tax"];
+    for i in range(3):
+        plt.plot(ma(taxes[i]),label = lbs[i]);
+    plt.legend();
+    plt.ylim(ymin=0);
     plt.show();
         
 
@@ -280,6 +330,12 @@ def printl(p):
     for g in p:
         out.append(g[0]);
     print(out);
+    
+def ma(a, n=25):
+    # return moving average
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
 
                 
 main();

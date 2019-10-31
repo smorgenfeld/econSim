@@ -50,7 +50,7 @@ class actor:
                 self.inv[1] -= 1;    
                 self.lastUsedTool = True;
             else:
-                self.inv[1] = 1;#self.nTP[2];
+                self.inv[1] = self.nTP[2];
                 self.lastUsedTool = False;
         
         # sink
@@ -76,7 +76,7 @@ class actor:
         elif (self.type == 0 and self.gold > lastPrice[0] * 3 and (lastPrice[1] * (self.yTP[1] - 1) >= mod) and r.randint(0,5) == 1):
             movements[2][-1] += 1;
             self.type = 1;
-        elif (self.type == 1 and self.gold > lastPrice[0] * 3 and lastPrice[2] * self.yTP[2] >= lastPrice[1]* (self.yTP[1] - 1) and r.randint(0,10)==10):
+        elif (self.type == 1 and self.gold > lastPrice[0] * 2 and lastPrice[2] * self.yTP[2] >= lastPrice[1] * (self.yTP[1] - 1) and r.randint(0,5)==1):
             movements[3][-1] += 1;
             self.type = 2;
         elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
