@@ -18,7 +18,7 @@ def main():
         totPop += 1;
     
     lastPrices = [1,2,3];
-    curPrices = [1,1,1];
+    curPrices = [1,2,3];
     allPrices = [[],[],[]]
     allPops = [[],[],[],[]]
     allSold = [[],[],[]]
@@ -26,9 +26,10 @@ def main():
     allWanted = [[],[],[]]
     movements = [[],[],[],[],[]]
     taxRevs = []
+    nobleSpending = []
     totGoldarray = [[],[],[],[],[]]
     tax = [0.1, 0.1, 0.1];
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(5000)):
         for a in actors:
             a.beforeTrades(i);
         
@@ -36,6 +37,7 @@ def main():
         prodCosts = [];
         buyerValues = [];
         taxRevs.append(0);
+        nobleSpending.append(0);
         for j in range(3):
             prodCosts.clear();
             buyerValues.clear();
@@ -119,6 +121,8 @@ def main():
                 for b in range(len(buyerValues)):
                     if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                         buyerValues[b][1].gold -= curPrices[j];
+                        if (buyerValues[b][1].type == 3):
+                            nobleSpending[-1] += curPrices[j];
                         buyerValues[b][1].inv[j] += 1;
                         assert(buyerValues[b][1].gold >= 0);
                         
@@ -130,7 +134,6 @@ def main():
                 allSold[j].append(totSold);
         for n in range(5):
             movements[n].append(0);
-            
         # Distribute tax revenue (split equally among economy if no nobles)
         noblecount = 0;
         for a in actors:
@@ -143,6 +146,13 @@ def main():
             for a in actors:
                 if (a.type == 3):
                     a.gold += taxRevs[-1]/noblecount;
+        
+        # Adjust tax rate to support noble spending
+        for taxType in range(len(tax)):
+            if (taxRevs[-1] == 0):
+                tax[taxType] = 0.1;
+            else:
+                tax[taxType] *= nobleSpending[-1]/max(1.013 * taxRevs[-1],1);
                     
         for a in actors:  
             a.afterTrades(lastPrices, movements, totGold, totPop);
@@ -230,6 +240,7 @@ def main():
     
     plt.figure(8);
     plt.plot(taxRevs, label = "Tax Revenue")
+    plt.plot(nobleSpending, label = "Noble Spending");
     plt.legend();
     plt.show();
     

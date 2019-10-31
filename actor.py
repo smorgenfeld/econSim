@@ -79,12 +79,14 @@ class actor:
         elif (self.type == 1 and self.gold > lastPrice[0] * 3 and lastPrice[2] * self.yTP[2] >= lastPrice[1]* (self.yTP[1] - 1) and r.randint(0,10)==10):
             movements[3][-1] += 1;
             self.type = 2;
-        elif (self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
+        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
             movements[4][-1] += 1;
             self.type = 3;
-            
+        
+        # make farmers lose all their unsold/eaten crops each round
         if (self.type == 0):
             self.inv[0] = 0;
+        # people consume all luxery goods each round
         self.inv[2] = 0;
             
     def getValue(self, t, lastPrices):
@@ -97,6 +99,7 @@ class actor:
         # Always buy luxury goods if you're a sink
         if (t == 2 and self.inv[2] < 1):
             return self.gold;
+        # Otherwise, try to buy luxery goods if you can afford food for the next couple rounds
         elif (t != 2 and self.gold > 3 * lastPrices[0]):
             return int(self.gold/r.randint(2,4));
         #print("Shouldn't get here (t value of " + str(t) + ")");
