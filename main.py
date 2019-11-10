@@ -17,6 +17,7 @@ def main():
         totGold += a.gold;
         totPop += 1;
     
+    # Init variables
     lastPrices = [1,2,3];
     curPrices = [1,2,3];
     allPrices = [[],[],[]]
@@ -31,8 +32,24 @@ def main():
     gdp = [];
     ppp = [];
     tax = [0,0,0];
-    toTax = [False, False, True]
+    
+    # If incomeTax is true, then income taxes are used.  If false, then VAT tax is used.
+    incomeTax = True;
+    
+    # VAT tax variables
+    toTax = [False, False, True];
     taxes = [[],[],[]]
+    
+    # Income tax proportions (Income Tax Prop. - ITP)
+    initITP = [0, 0.25, 0.5];
+    curITP = initITP.copy();
+    incomeTaxThresholds = [0.33, 0.66];
+    
+    actualTaxThresholds = [];
+    for i in range(len(incomeTaxThresholds)):
+        actualTaxThresholds.append([]);
+    
+    # Run loops (with fancy progress display)
     for i in tqdm(range(5000)):
         for a in actors:
             a.beforeTrades(i);
@@ -102,20 +119,14 @@ def main():
                 # Arrange production costs from low to high
                 bubble_sort(prodCosts);
                 bubble_sort(buyerValues);
-                #print(prodCosts);
                 # equate costs & values list lengths by removing lowest buyer bids
                 # or highest seller bids
-                #print(str(len(buyerValues)) + " " + str(len(prodCosts)))
                 if (len(prodCosts) < len(buyerValues)):
                     buyerValues = buyerValues[len(buyerValues) - len(prodCosts):];
                 elif (len(prodCosts) > len(buyerValues)):
                     prodCosts = prodCosts[:len(buyerValues)];
-                #print(prodCosts);
                 # Arrange buyer bids from high to low
                 buyerValues.reverse();
-                
-                #printl(buyerValues);
-                #printl(prodCosts);
                 
                 # Get price for good j (use buyervalues to set price for both buyers
                 # and sellers, to prevent incentives from adding/removing gold from economy)
@@ -139,7 +150,7 @@ def main():
                         buyerValues[b][1].inv[j] += 1;
                         assert(buyerValues[b][1].gold >= 0);
                         
-                        prodCosts[b][1].gold += curPrices[j] / (1 + tax[j]);
+                        prodCosts[b][1].pay(curPrices[j] / (1 + tax[j]));
                         taxRevs[-1] += curPrices[j] - curPrices[j] / (1 + tax[j]);
                         prodCosts[b][1].inv[j] -= 1;
                         assert(prodCosts[b][1].inv[j] >= 0);
@@ -147,6 +158,52 @@ def main():
                 allSold[j].append(totSold);
         for n in range(5):
             movements[n].append(0);
+        
+        
+        # Adjust tax rate to support noble spending
+        if (not incomeTax):
+            for taxType in range(len(tax)):
+                if (taxRevs[-1] == 0 and toTax[taxType]):
+                    tax[taxType] = 0.1;
+                else:
+                    tax[taxType] *= nobleSpending[-1]/max(1.013 * taxRevs[-1],1);
+                tax[taxType] = min(tax[taxType], 1);
+                taxes[taxType].append(tax[taxType]);
+        else:
+            # Calculate income thresholds
+            incTax = [];
+            for act in actors:
+                incTax.append(act.lastIncome);
+            incTax.sort();
+            thresh = [incTax[int(len(incTax) * kek)] for kek in incomeTaxThresholds];
+            for kekek in range(len(actualTaxThresholds)):
+                actualTaxThresholds[kekek].append(thresh[kekek]);
+            # Collect income tax
+            for act in actors:
+                taxBracket = 0;
+                for th in thresh:
+                    if (act.lastIncome > taxBracket):
+                        taxBracket += 1;
+                    else:
+                        break;
+                newTax = min(int(act.lastIncome * curITP[taxBracket]), act.gold);
+                taxRevs[-1] += newTax;
+                act.gold -= newTax;
+                act.lastIncome = 0;
+            
+            mod = 1.08
+            if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
+                mod = 1.25;
+                print("oh no")
+            
+            for taxType in range(len(curITP)):
+                if (taxRevs[-1] == 0 and initITP[taxType] > 0 and nobleSpending[-1] != 0):
+                    curITP[taxType] = initITP[taxType];
+                else:
+                    curITP[taxType] *= nobleSpending[-1]/max(mod * taxRevs[-1],1); #1.013 good for VAT
+                if (taxType != 0):
+                    taxes[taxType-1].append(curITP[taxType]);
+        
         # Distribute tax revenue (split equally among economy if no nobles)
         noblecount = 0;
         for a in actors:
@@ -159,15 +216,6 @@ def main():
             for a in actors:
                 if (a.type == 3):
                     a.gold += taxRevs[-1]/noblecount;
-        
-        # Adjust tax rate to support noble spending
-        for taxType in range(len(tax)):
-            if (taxRevs[-1] == 0 and toTax[taxType]):
-                tax[taxType] = 0.1;
-            else:
-                tax[taxType] *= nobleSpending[-1]/max(1.013 * taxRevs[-1],1);
-            tax[taxType] = min(tax[taxType], 1);
-            taxes[taxType].append(tax[taxType]);
                     
         for a in actors:  
             a.afterTrades(lastPrices, movements, totGold, totPop);
@@ -177,7 +225,6 @@ def main():
                 del a;
         lastPrices = curPrices;
         
-        #print(lastPrices);
         tGold = 0;
         fGold = 0;
         sGold = 0;
@@ -200,16 +247,9 @@ def main():
         totGoldarray[2].append(sGold);
         totGoldarray[3].append(jGold);
         totGoldarray[4].append(nGold);
-        #print(tGold);
-        #print(pop);
         for n in range(4):
             allPops[n].append(pop[n])
         ppp.append(gdp[-1]/(totPop * max(1, lastPrices[0])))
-        #print("Farmer gold: " + str(fGold));
-        #print("Smith gold: " + str(sGold));
-        #print("Jeweler gold: " + str(jGold));
-        #print("Noble gold: " + str(nGold));
-        #print()
     plt.figure(1);
     lbs = ["Food", "Tools", "Luxury"];
     for i in range(3):
@@ -301,12 +341,27 @@ def main():
     plt.show();
     
     plt.figure(13);
-    lbs = ["Food Tax", "Tool Tax", "Luxury Tax"];
-    for i in range(3):
-        plt.plot(ma(taxes[i]),label = lbs[i]);
+    if (not incomeTax):
+        lbs = ["Food Tax", "Tool Tax", "Luxury Tax"];
+        for i in range(3):
+            plt.plot(ma(taxes[i]),label = lbs[i]);
+    else:
+        lbs = [str(kek) + "+ Tax" for kek in incomeTaxThresholds];
+        for i in range(len(incomeTaxThresholds)):
+            plt.plot(ma(taxes[i]),label = lbs[i]);
     plt.legend();
     plt.ylim(ymin=0);
     plt.show();
+    
+    if (incomeTax):
+        plt.figure(14);
+        lbs = [str(kek) + "+ Tax Threshold" for kek in incomeTaxThresholds];
+        for i in range(len(actualTaxThresholds)):
+            plt.plot(ma(actualTaxThresholds[i]),label = lbs[i]);
+            plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+       
         
 
 def bubble_sort(nums):

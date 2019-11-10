@@ -20,6 +20,8 @@ class actor:
         
         self.lastUsedTool = False;
         
+        self.lastIncome = 0;
+        
     def beforeTrades(self, step):
         # farmer
         if (self.type == 0):
@@ -79,7 +81,7 @@ class actor:
         elif (self.type == 1 and self.gold > lastPrice[0] * 2 and lastPrice[2] * self.yTP[2] >= lastPrice[1] * (self.yTP[1] - 1) and r.randint(0,5)==1):
             movements[3][-1] += 1;
             self.type = 2;
-        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
+        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 12 and r.randint(0,0)==0):
             movements[4][-1] += 1;
             self.type = 3;
         
@@ -104,3 +106,7 @@ class actor:
             return int(self.gold/r.randint(2,4));
         #print("Shouldn't get here (t value of " + str(t) + ")");
         return 0;
+    
+    def pay(self, amount):
+        self.gold += amount;
+        self.lastIncome += amount;
