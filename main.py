@@ -7,7 +7,7 @@ Created on Fri Oct 25 14:02:26 2019
 import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
-def main():
+def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = ""):
     actors = [];
     for i in range(100):
         actors.append(actor.actor(100));
@@ -34,16 +34,16 @@ def main():
     tax = [0,0,0];
     
     # If incomeTax is true, then income taxes are used.  If false, then VAT tax is used.
-    incomeTax = True;
+    #incomeTax = True;
     
     # VAT tax variables
-    toTax = [False, False, True];
+    #toTax = [False, False, True];
     taxes = [[],[],[]]
     
     # Income tax proportions (Income Tax Prop. - ITP)
-    initITP = [0, 0.25, 0.5];
+    #initITP = [0, 0.25, 0.5];
     curITP = initITP.copy();
-    incomeTaxThresholds = [0.33, 0.66];
+    #incomeTaxThresholds = [0.33, 0.66];
     
     actualTaxThresholds = [];
     for i in range(len(incomeTaxThresholds)):
@@ -191,10 +191,10 @@ def main():
                 act.gold -= newTax;
                 act.lastIncome = 0;
             
-            mod = 1.08
+            mod = 1 # as mod increases, nobles get less money from taxes
             if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
                 mod = 1.25;
-                print("oh no")
+                #print("oh no")
             
             for taxType in range(len(curITP)):
                 if (taxRevs[-1] == 0 and initITP[taxType] > 0 and nobleSpending[-1] != 0):
@@ -250,120 +250,132 @@ def main():
         for n in range(4):
             allPops[n].append(pop[n])
         ppp.append(gdp[-1]/(totPop * max(1, lastPrices[0])))
-    plt.figure(1);
-    lbs = ["Food", "Tools", "Luxury"];
-    for i in range(3):
-        plt.plot(ma(allPrices[i]), label = ("Price of " + lbs[i]));
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(2);
-    lbs = ["Food", "Tools", "Luxury"];
-    for i in range(3):
-        plt.plot(ma(allSold[i]), label = ("Units sold: " + lbs[i]));
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(3);
-    lbs = ["Farmers", "Smiths", "Jewelers", "Nobles"];
-    for i in range(4):
-        plt.plot(allPops[i],label = lbs[i]);
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(4);
-    plt.plot(ma(allProduced[0]), label = "Food Supply")
-    plt.plot(ma(allWanted[0]), label = "Food Demand")
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(5);
-    plt.plot(ma(allProduced[1]), label = "Tool Supply")
-    plt.plot(ma(allWanted[1]), label = "Tool Demand")
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(6);
-    plt.plot(allProduced[2], label = "Luxury Supply")
-    plt.plot(allWanted[2], label = "Luxury Demand")
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(7);
-    lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
-    for i in range(5):
-        plt.plot(ma(movements[i]),label = lbs[i]);
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(8);
-    plt.plot(ma(taxRevs), label = "Tax Revenue")
-    plt.plot(ma(nobleSpending), label = "Noble Spending");
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(9);
-    lbs = ["Total Gold", "Farmer Gold", "Smith Gold", "Jeweler Gold", "Noble Gold"];
-    for i in range(5):
-        plt.plot(totGoldarray[i],label = lbs[i]);
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(10);
-    lbs = ["Avg. Farmer Gold", "Avg. Smith Gold", "Avg. Jeweler Gold", "Avg. Noble Gold"];
-    for i in range(4):
-        plt.plot(ma([totGoldarray[i+1][j]/max(1, allPops[i][j]) for j in range(len(allPops[i]))]),label = lbs[i]);
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(11);
-    plt.plot(ma(gdp), label = "GDP")
-    plt.plot(ma(gdp, 500), label = " Very Smoothed GDP")
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(12);
-    plt.plot(ma(ppp), label = "PPP")
-    plt.plot(ma(ppp, 500), label = " Very Smoothed PPP")
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    plt.figure(13);
-    if (not incomeTax):
-        lbs = ["Food Tax", "Tool Tax", "Luxury Tax"];
+    if (not long):
+        plt.figure(1);
+        lbs = ["Food", "Tools", "Luxury"];
         for i in range(3):
-            plt.plot(ma(taxes[i]),label = lbs[i]);
-    else:
-        lbs = [str(kek) + "+ Tax" for kek in incomeTaxThresholds];
-        for i in range(len(incomeTaxThresholds)):
-            plt.plot(ma(taxes[i]),label = lbs[i]);
-    plt.legend();
-    plt.ylim(ymin=0);
-    plt.show();
-    
-    if (incomeTax):
-        plt.figure(14);
-        lbs = [str(kek) + "+ Tax Threshold" for kek in incomeTaxThresholds];
-        for i in range(len(actualTaxThresholds)):
-            plt.plot(ma(actualTaxThresholds[i]),label = lbs[i]);
-            plt.legend();
+            plt.plot(ma(allPrices[i]), label = ("Price of " + lbs[i]));
+        plt.legend();
         plt.ylim(ymin=0);
         plt.show();
-       
         
-
+        plt.figure(2);
+        lbs = ["Food", "Tools", "Luxury"];
+        for i in range(3):
+            plt.plot(ma(allSold[i]), label = ("Units sold: " + lbs[i]));
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(3);
+        lbs = ["Farmers", "Smiths", "Jewelers", "Nobles"];
+        for i in range(4):
+            plt.plot(allPops[i],label = lbs[i]);
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(4);
+        plt.plot(ma(allProduced[0]), label = "Food Supply")
+        plt.plot(ma(allWanted[0]), label = "Food Demand")
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(5);
+        plt.plot(ma(allProduced[1]), label = "Tool Supply")
+        plt.plot(ma(allWanted[1]), label = "Tool Demand")
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(6);
+        plt.plot(allProduced[2], label = "Luxury Supply")
+        plt.plot(allWanted[2], label = "Luxury Demand")
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(7);
+        lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
+        for i in range(5):
+            plt.plot(ma(movements[i]),label = lbs[i]);
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(8);
+        plt.plot(ma(taxRevs), label = "Tax Revenue")
+        plt.plot(ma(nobleSpending), label = "Noble Spending");
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(9);
+        lbs = ["Total Gold", "Farmer Gold", "Smith Gold", "Jeweler Gold", "Noble Gold"];
+        for i in range(5):
+            plt.plot(totGoldarray[i],label = lbs[i]);
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(10);
+        lbs = ["Avg. Farmer Gold", "Avg. Smith Gold", "Avg. Jeweler Gold", "Avg. Noble Gold"];
+        for i in range(4):
+            plt.plot(ma([totGoldarray[i+1][j]/max(1, allPops[i][j]) for j in range(len(allPops[i]))]),label = lbs[i]);
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        plt.figure(13);
+        if (not incomeTax):
+            lbs = ["Food Tax", "Tool Tax", "Luxury Tax"];
+            for i in range(3):
+                plt.plot(ma(taxes[i]),label = lbs[i]);
+        else:
+            lbs = [str(kek) + "+ Tax" for kek in incomeTaxThresholds];
+            for i in range(len(incomeTaxThresholds)):
+                plt.plot(ma(taxes[i]),label = lbs[i]);
+        plt.legend();
+        plt.ylim(ymin=0);
+        plt.show();
+        
+        if (incomeTax):
+            plt.figure(14);
+            lbs = [str(kek) + "+ Tax Threshold" for kek in incomeTaxThresholds];
+            for i in range(len(actualTaxThresholds)):
+                plt.plot(ma(actualTaxThresholds[i]),label = lbs[i]);
+                plt.legend();
+            plt.ylim(ymin=0);
+            plt.show();
+    
+    plt.figure(11);
+    if (not long):
+        plt.plot(ma(gdp), label = "GDP")
+    plt.plot(ma(gdp, 500), label = (name + " Very Smoothed GDP"))
+    plt.legend();
+    plt.ylim(ymin=0, ymax = 3000);
+    plt.show();
+    
+    print(sum(gdp)/len(gdp))
+    
+    plt.figure(12);
+    if (not long):
+        plt.plot(ma(ppp), label = "PPP")
+    plt.plot(ma(ppp, 500), label = (name + " Very Smoothed PPP"))
+    plt.legend();
+    plt.ylim(ymin=0, ymax = 2.25);
+    plt.show();
+    
+    if (long):
+        plt.figure(15);
+        plt.plot(allPops[3],label = (name + " noble count"));
+        plt.legend();
+        plt.ylim(ymin=0, ymax = 20);
+        plt.show();  
+    
+    print(sum(ppp)/len(ppp))
+    
 def bubble_sort(nums):
     # We set swapped to True so the loop looks runs at least once
     swapped = True
@@ -392,6 +404,15 @@ def ma(a, n=25):
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-                
-main();
+#main();                
+main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
+#main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
+#main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
+#main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");
+main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
+main(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich");
+
+main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
+main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
+main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux");
         

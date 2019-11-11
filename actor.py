@@ -81,9 +81,12 @@ class actor:
         elif (self.type == 1 and self.gold > lastPrice[0] * 2 and lastPrice[2] * self.yTP[2] >= lastPrice[1] * (self.yTP[1] - 1) and r.randint(0,5)==1):
             movements[3][-1] += 1;
             self.type = 2;
-        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 12 and r.randint(0,0)==0):
+        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
             movements[4][-1] += 1;
             self.type = 3;
+        
+        elif (self.type == 3 and self.gold < totGold/totPop * 5):
+            self.type = 2;
         
         # make farmers lose all their unsold/eaten crops each round
         if (self.type == 0):
