@@ -4,7 +4,7 @@ Created on Fri Oct 25 14:02:26 2019
 
 @author: Spencer Morgenfeld
 """
-import actor, random as r, matplotlib.pyplot as plt, numpy as np;
+import actor, random as r, matplotlib.pyplot as plt, numpy as np, multiprocessing as mp;
 from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = ""):
@@ -404,15 +404,22 @@ def ma(a, n=25):
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-#main();                
-main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
-#main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
-#main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
-#main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");
-main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
-main(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich");
-
-main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
-main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
-main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux");
+#main();
+if __name__ == '__main__':
+    p=[];              
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal")));
+    #main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
+    #main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
+    #main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive")));
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich")));
+    
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food")));
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools")));
+    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux")));
+    
+    for kk in p:
+        p.start();
+    for kk in p:
+        p.join();
         
