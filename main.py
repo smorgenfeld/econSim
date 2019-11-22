@@ -4,7 +4,7 @@ Created on Fri Oct 25 14:02:26 2019
 
 @author: Spencer Morgenfeld
 """
-import actor, random as r, matplotlib.pyplot as plt, numpy as np, multiprocessing as mp;
+import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = ""):
@@ -76,7 +76,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                             prodCost = max(int(lastPrices[1] / numSelling * (1 + tax[0])), 1);
                         prodCosts.extend([[prodCost, a]] * numSelling);
                     else:
-                        buyerValues.append([a.getValue(j, lastPrices), a]);
+                        buyerValues.append([a.getValue(j, lastPrices, incomeTax), a]);
                 # tool auction
                 elif (j == 1):
                     if (a.type == 1):
@@ -87,7 +87,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                             prodCost = int(max((lastPrices[0] + r.randint(-2,2)) / numToSell * (1 + tax[1]), 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[1] + 5), a]] * numToSell);
                     else:
-                        buyerValues.append([a.getValue(j, lastPrices), a]);
+                        buyerValues.append([a.getValue(j, lastPrices, incomeTax), a]);
                 # luxury auction
                 else: # j == 2
                     if (a.type == 2):
@@ -101,9 +101,9 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                         numToBuy = 1;
                         if (a.type == 3):
                             numToBuy = 5;
-                            buyerValues.extend([[a.getValue(j, lastPrices)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
+                            buyerValues.extend([[a.getValue(j, lastPrices, incomeTax)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
                         else:
-                            buyerValues.append([a.getValue(j, lastPrices), a]);
+                            buyerValues.append([a.getValue(j, lastPrices, incomeTax), a]);
             allProduced[j].append(len(prodCosts));
             allWanted[j].append(len(buyerValues));
             if (len(buyerValues) == 0 or len(prodCosts) == 0):
@@ -162,11 +162,14 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         
         # Adjust tax rate to support noble spending
         if (not incomeTax):
+            mod = 1;
+            if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
+                mod = 1.25;
             for taxType in range(len(tax)):
                 if (taxRevs[-1] == 0 and toTax[taxType]):
                     tax[taxType] = 0.1;
                 else:
-                    tax[taxType] *= nobleSpending[-1]/max(1.013 * taxRevs[-1],1);
+                    tax[taxType] *= nobleSpending[-1]/max(mod * taxRevs[-1],1);
                 tax[taxType] = min(tax[taxType], 1);
                 taxes[taxType].append(tax[taxType]);
         else:
@@ -189,6 +192,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 newTax = min(int(act.lastIncome * curITP[taxBracket]), act.gold);
                 taxRevs[-1] += newTax;
                 act.gold -= newTax;
+                act.lastTax = newTax
                 act.lastIncome = 0;
             
             mod = 1 # as mod increases, nobles get less money from taxes
@@ -405,21 +409,14 @@ def ma(a, n=25):
     return ret[n - 1:] / n
 
 #main();
-if __name__ == '__main__':
-    p=[];              
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal")));
+main(long = False, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
+#main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
+#main(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich");
+#main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
+#main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
+main(long = False, incomeTax = False, toTax = [False, False, True], name = "Just Lux")
     #main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
     #main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
     #main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive")));
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich")));
-    
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food")));
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools")));
-    p.append(mp.Process(target=main,args=(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux")));
-    
-    for kk in p:
-        p.start();
-    for kk in p:
-        p.join();
+
         

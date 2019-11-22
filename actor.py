@@ -21,6 +21,7 @@ class actor:
         self.lastUsedTool = False;
         
         self.lastIncome = 0;
+        self.lastTax = 0;
         
     def beforeTrades(self, step):
         # farmer
@@ -94,19 +95,22 @@ class actor:
         # people consume all luxery goods each round
         self.inv[2] = 0;
             
-    def getValue(self, t, lastPrices):
+    def getValue(self, t, lastPrices, incomeTax):
+        toSpend = self.gold;
+        if (incomeTax):
+            toSpend = max(0, toSpend - self.lastTax)
         # Always buy food if you're going to starve
         if (t == 0 and self.inv[0] < 1):
-            return self.gold;
+            return toSpend;
         # Always buy tools if it's worth it, based on last price of produced good
         if (t == 1 and self.inv[1] < 1 and self.type != 3):
-            return min(self.gold, (self.yTP[self.type] - self.nTP[self.type]) * lastPrices[self.type]);
+            return min(toSpend, (self.yTP[self.type] - self.nTP[self.type]) * lastPrices[self.type]);
         # Always buy luxury goods if you're a sink
         if (t == 2 and self.inv[2] < 1):
-            return self.gold;
+            return toSpend;
         # Otherwise, try to buy luxery goods if you can afford food for the next couple rounds
-        elif (t != 2 and self.gold > 3 * lastPrices[0]):
-            return int(self.gold/r.randint(2,4));
+        elif (t != 2 and toSpend > 3 * lastPrices[0]):
+            return int(toSpend/r.randint(2,4));
         #print("Shouldn't get here (t value of " + str(t) + ")");
         return 0;
     
