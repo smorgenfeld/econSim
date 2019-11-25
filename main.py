@@ -9,8 +9,10 @@ from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = ""):
     actors = [];
-    for i in range(100):
+    for i in range(95):
         actors.append(actor.actor(100));
+    for i in range(5):
+        actors.append(actor.actor(100, 3));
     totGold = 0;
     totPop = 0;
     for a in actors:
@@ -30,7 +32,8 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     nobleSpending = []
     totGoldarray = [[],[],[],[],[]]
     gdp = [];
-    ppp = [];
+    ppp = []; # gdp/(# actors * price of food).  Guess it's kinda an adjusted gdp for 'inflation' (mostly adusts for actors eating money supply)
+    cci = []; # consumer confidence index.  Measures proportion of actors willing to bid for luxury goods.
     tax = [0,0,0];
     
     # If incomeTax is true, then income taxes are used.  If false, then VAT tax is used.
@@ -50,7 +53,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         actualTaxThresholds.append([]);
     
     # Run loops (with fancy progress display)
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(1000)):
         for a in actors:
             a.beforeTrades(i);
         
@@ -60,6 +63,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         taxRevs.append(0);
         nobleSpending.append(0);
         gdp.append(0);
+        cci.append(0);
         for j in range(3):
             prodCosts.clear();
             buyerValues.clear();
@@ -100,10 +104,15 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                     else:
                         numToBuy = 1;
                         if (a.type == 3):
-                            numToBuy = 5;
+                            numToBuy = int(max(1, a.gold/lastPrices[2] - 1));
                             buyerValues.extend([[a.getValue(j, lastPrices, incomeTax)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
+                            cci[-1] += 1;
                         else:
-                            buyerValues.append([a.getValue(j, lastPrices, incomeTax), a]);
+                            luxVal = a.getValue(j, lastPrices, incomeTax);
+                            if (luxVal > 0):
+                                buyerValues.append([luxVal, a]);
+                                cci[-1] += 1;
+            cci[-1] = cci[-1]/totPop;
             allProduced[j].append(len(prodCosts));
             allWanted[j].append(len(buyerValues));
             if (len(buyerValues) == 0 or len(prodCosts) == 0):
@@ -142,7 +151,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 for b in range(len(buyerValues)):
                     if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                         buyerValues[b][1].gold -= curPrices[j];
-                        # Only add food/luxury goods bought to GDP (as tools are alwyas an intermediate product)
+                        # Only add food/luxury goods bought to GDP (as tools are always an intermediate product)
                         if (j != 1):
                             gdp[-1] += curPrices[j];
                         if (buyerValues[b][1].type == 3):
@@ -162,7 +171,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         
         # Adjust tax rate to support noble spending
         if (not incomeTax):
-            mod = 1;
+            mod = 0.95;
             if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
                 mod = 1.25;
             for taxType in range(len(tax)):
@@ -371,7 +380,15 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     plt.ylim(ymin=0, ymax = 2.25);
     plt.show();
     
-    if (long):
+    plt.figure(16);
+    if (not long):
+        plt.plot(ma(cci), label = "CCI")
+    plt.plot(ma(cci, 500), label = (name + " Very Smoothed CCI"))
+    plt.legend();
+    plt.ylim(ymin=0, ymax = 2.25);
+    plt.show();
+    
+    if (not long):
         plt.figure(15);
         plt.plot(allPops[3],label = (name + " noble count"));
         plt.legend();
@@ -409,12 +426,13 @@ def ma(a, n=25):
     return ret[n - 1:] / n
 
 #main();
-main(long = False, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
-#main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
-#main(long = True, incomeTax = True, initITP = [0, 0.8], incomeTaxThresholds=[0.8], name = "Just rich");
-#main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
-#main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
-main(long = False, incomeTax = False, toTax = [False, False, True], name = "Just Lux")
+main(long = True, incomeTax = True, initITP = [0, 0.95], incomeTaxThresholds=[0.8], name = "Just rich");
+main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
+main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
+
+main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
+main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
+main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux")
     #main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
     #main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
     #main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");

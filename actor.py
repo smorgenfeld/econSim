@@ -36,10 +36,7 @@ class actor:
         # toolmaker
         elif (self.type == 1):
             if (self.inv[1] > 0):
-                if (step > 250000):
-                    self.inv[1] = min(self.yTP[1]*2 + self.inv[1], self.yTP[1]*2);
-                else:
-                    self.inv[1] = min(self.yTP[1] + self.inv[1], self.yTP[1]);
+                self.inv[1] = min(self.yTP[1] + self.inv[1], self.yTP[1]);
                 self.inv[1] -= 1;
                 self.lastUsedTool = True;
             else:
@@ -70,7 +67,7 @@ class actor:
         if (self.inv[0] < 0):
             #starve
             #self.dead = True;
-            if (self.type != 0):
+            if (self.type != 0 and self.type != 3):
                 self.type -= 1;
                 movements[0][-1] += 1;
         #elif (self.inv[2] < 0 and self.type == 3):
@@ -82,12 +79,12 @@ class actor:
         elif (self.type == 1 and self.gold > lastPrice[0] * 2 and lastPrice[2] * self.yTP[2] >= lastPrice[1] * (self.yTP[1] - 1) and r.randint(0,5)==1):
             movements[3][-1] += 1;
             self.type = 2;
-        elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
-            movements[4][-1] += 1;
-            self.type = 3;
+        #elif (self.type != 3 and self.gold > lastPrice[0] * 3 + lastPrice[2] * 3 and self.gold > totGold/totPop * 10 and r.randint(0,0)==0):
+        #    movements[4][-1] += 1;
+        #    self.type = 3;
         
-        elif (self.type == 3 and self.gold < totGold/totPop * 5):
-            self.type = 2;
+        #elif (self.type == 3 and self.gold < totGold/totPop * 5):
+         #   self.type = 2;
         
         # make farmers lose all their unsold/eaten crops each round
         if (self.type == 0):
@@ -110,7 +107,7 @@ class actor:
             return toSpend;
         # Otherwise, try to buy luxery goods if you can afford food for the next couple rounds
         elif (t != 2 and toSpend > 3 * lastPrices[0]):
-            return int(toSpend/r.randint(2,4));
+            return int(min(toSpend, lastPrices[2]));
         #print("Shouldn't get here (t value of " + str(t) + ")");
         return 0;
     
