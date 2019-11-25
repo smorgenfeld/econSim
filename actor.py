@@ -27,7 +27,7 @@ class actor:
         # farmer
         if (self.type == 0):
             if (self.inv[1] > 0):
-                self.inv[1] -= 1;
+                self.inv[1] = 0;
                 self.inv[0] += self.yTP[0];
                 self.lastUsedTool = True;
             else:
@@ -47,15 +47,15 @@ class actor:
         elif (self.type == 2):
             if (self.inv[1] > 0):
                 self.inv[2] = min(self.yTP[2] + self.inv[2], 3);
-                self.inv[1] -= 1;    
+                self.inv[1] = 0;    
                 self.lastUsedTool = True;
             else:
-                self.inv[1] = self.nTP[2];
+                #self.inv[1] = self.nTP[2];
                 self.lastUsedTool = False;
         
         # sink
         elif (self.type == 3):
-            self.inv[2] -= 1;
+            self.inv[2] = 0;
             self.lastUsedTool = False;
         self.inv[0] -= 1;
        
@@ -107,7 +107,7 @@ class actor:
             return toSpend;
         # Otherwise, try to buy luxery goods if you can afford food for the next couple rounds
         elif (t != 2 and toSpend > 3 * lastPrices[0]):
-            return int(min(toSpend, lastPrices[2]));
+            return toSpend - 3 * lastPrices[0];
         #print("Shouldn't get here (t value of " + str(t) + ")");
         return 0;
     

@@ -53,7 +53,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         actualTaxThresholds.append([]);
     
     # Run loops (with fancy progress display)
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(3000)):
         for a in actors:
             a.beforeTrades(i);
         
@@ -164,6 +164,8 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                         prodCosts[b][1].inv[j] -= 1;
                         assert(prodCosts[b][1].inv[j] >= 0);
                         totSold += 1;
+                        #if (buyerValues[b][1].type != 3 and j == 2):
+                        #    print(buyerValues[b][1].type)
                 allSold[j].append(totSold);
         for n in range(5):
             movements[n].append(0);
@@ -194,7 +196,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
             for act in actors:
                 taxBracket = 0;
                 for th in thresh:
-                    if (act.lastIncome > taxBracket):
+                    if (act.lastIncome > thresh[taxBracket]):
                         taxBracket += 1;
                     else:
                         break;
@@ -309,13 +311,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         plt.ylim(ymin=0);
         plt.show();
         
-        plt.figure(7);
-        lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
-        for i in range(5):
-            plt.plot(ma(movements[i]),label = lbs[i]);
-        plt.legend();
-        plt.ylim(ymin=0);
-        plt.show();
+        
         
         plt.figure(8);
         plt.plot(ma(taxRevs), label = "Tax Revenue")
@@ -385,15 +381,23 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         plt.plot(ma(cci), label = "CCI")
     plt.plot(ma(cci, 500), label = (name + " Very Smoothed CCI"))
     plt.legend();
-    plt.ylim(ymin=0, ymax = 2.25);
+    plt.ylim(ymin=0, ymax = 1);
     plt.show();
     
-    if (not long):
-        plt.figure(15);
-        plt.plot(allPops[3],label = (name + " noble count"));
-        plt.legend();
-        plt.ylim(ymin=0, ymax = 20);
-        plt.show();  
+    plt.figure(7);
+    #lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
+    #for i in range(5):
+    #    plt.plot(ma(movements[i]),label = lbs[i]);
+    plt.plot(ma([movements[0][i] / (totPop - allPops[0][i]) for kek in range(len(movements[0]))], 500),label = (name + " Starvation Index"));
+    plt.legend();
+    plt.ylim(ymin=0, ymax=0.25);
+    plt.show();
+    
+    plt.figure(15);
+    plt.plot(ma([(allPops[1][i] + allPops[2][i] * 2) / totPop for i in range(len(allPops[1]))], 500), label = (name + " Job Quality Index"))
+    plt.legend();
+    plt.ylim(ymin=0, ymax = 1);
+    plt.show();
     
     print(sum(ppp)/len(ppp))
     
@@ -428,7 +432,8 @@ def ma(a, n=25):
 #main();
 main(long = True, incomeTax = True, initITP = [0, 0.95], incomeTaxThresholds=[0.8], name = "Just rich");
 main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
-main(long = True, incomeTax = True, initITP = [0, 0.1, 0.5], name = "Progressive");
+main(long = True, incomeTax = True, initITP = [0, 0.2, 0.7], name = "Progressive");
+main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Tax the poor!");
 
 main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
 main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
