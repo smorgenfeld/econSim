@@ -33,7 +33,7 @@ class actor:
             else:
                 self.inv[0] += int(self.nTP[0])# / r.randint(1, 2));
                 self.lastUsedTool = False;
-        # toolmaker
+        # smith
         elif (self.type == 1):
             if (self.inv[1] > 0):
                 self.inv[1] = min(self.yTP[1] + self.inv[1], self.yTP[1]);

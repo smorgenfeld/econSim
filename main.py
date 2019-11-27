@@ -32,6 +32,9 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     nobleSpending = []
     totGoldarray = [[],[],[],[],[]]
     gdp = [];
+    conSpend = [];
+    govSpend = [];
+    investSpend = [];
     ppp = []; # gdp/(# actors * price of food).  Guess it's kinda an adjusted gdp for 'inflation' (mostly adusts for actors eating money supply)
     cci = []; # consumer confidence index.  Measures proportion of actors willing to bid for luxury goods.
     tax = [0,0,0];
@@ -63,6 +66,9 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         taxRevs.append(0);
         nobleSpending.append(0);
         gdp.append(0);
+        conSpend.append(0);
+        govSpend.append(0);
+        investSpend.append(0);
         cci.append(0);
         for j in range(3):
             prodCosts.clear();
@@ -151,10 +157,15 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 for b in range(len(buyerValues)):
                     if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                         buyerValues[b][1].gold -= curPrices[j];
-                        # Only add food/luxury goods bought to GDP (as tools are always an intermediate product)
-                        if (j != 1):
-                            gdp[-1] += curPrices[j];
-                        if (buyerValues[b][1].type == 3):
+                        
+                        # Add transaction to gdp
+                        gdp[-1] += curPrices[j];
+                        if (j != 1 and buyerValues[b][1] != 3):
+                            conSpend[-1] += curPrices[j]; 
+                        elif (j == 1):
+                            investSpend[-1] += curPrices[j]; 
+                        elif (buyerValues[b][1].type == 3):
+                            govSpend[-1] += curPrices[j];
                             nobleSpending[-1] += curPrices[j];
                         buyerValues[b][1].inv[j] += 1;
                         assert(buyerValues[b][1].gold >= 0);
@@ -167,6 +178,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                         #if (buyerValues[b][1].type != 3 and j == 2):
                         #    print(buyerValues[b][1].type)
                 allSold[j].append(totSold);
+                assert(conSpend[-1] + investSpend[-1] + govSpend[-1] == gdp[-1]);
         for n in range(5):
             movements[n].append(0);
         
@@ -212,10 +224,11 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 #print("oh no")
             
             for taxType in range(len(curITP)):
-                if (taxRevs[-1] == 0 and initITP[taxType] > 0 and nobleSpending[-1] != 0):
+                if (taxRevs[-1] < 1 and initITP[taxType] > 0): # and nobleSpending[-1] != 0):
                     curITP[taxType] = initITP[taxType];
                 else:
                     curITP[taxType] *= nobleSpending[-1]/max(mod * taxRevs[-1],1); #1.013 good for VAT
+                    #print(curITP[taxType])
                 if (taxType != 0):
                     taxes[taxType-1].append(curITP[taxType]);
         
@@ -360,7 +373,10 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     
     plt.figure(11);
     if (not long):
-        plt.plot(ma(gdp), label = "GDP")
+        plt.plot(ma(gdp), label = "GDP");
+        plt.plot(ma(investSpend), label = "Investment Spending");
+        plt.plot(ma(conSpend), label = "Consumer Spending");
+        plt.plot(ma(govSpend), label = "Government Spending");
     plt.plot(ma(gdp, 500), label = (name + " Very Smoothed GDP"))
     plt.legend();
     plt.ylim(ymin=0, ymax = 3000);
@@ -373,7 +389,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         plt.plot(ma(ppp), label = "PPP")
     plt.plot(ma(ppp, 500), label = (name + " Very Smoothed PPP"))
     plt.legend();
-    plt.ylim(ymin=0, ymax = 2.25);
+    plt.ylim(ymin=0, ymax = 2.75);
     plt.show();
     
     plt.figure(16);
@@ -430,14 +446,14 @@ def ma(a, n=25):
     return ret[n - 1:] / n
 
 #main();
-main(long = True, incomeTax = True, initITP = [0, 0.95], incomeTaxThresholds=[0.8], name = "Just rich");
-main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
-main(long = True, incomeTax = True, initITP = [0, 0.2, 0.7], name = "Progressive");
-main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Tax the poor!");
+main(long = False, incomeTax = True, initITP = [0, 0, 0.95], incomeTaxThresholds=[0.1, 0.8], name = "Just rich");
+#main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
+#main(long = True, incomeTax = True, initITP = [0, 0.2, 0.7], name = "Progressive");
+#main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Tax the poor!");
 
-main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
-main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
-main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux")
+#main(long = True, incomeTax = False, toTax = [True, False, False], name = "Just Food");
+#main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
+#main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux")
     #main(long = True, incomeTax = True, initITP = [0.05, 0.15, 0.2], name = "Linear");
     #main(long = True, incomeTax = True, initITP = [0.05, 0.2, 0.5], name = "Exp");
     #main(long = True, incomeTax = True, initITP = [0, 0.25, 0.5], name = "Linear+");
