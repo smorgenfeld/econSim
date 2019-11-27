@@ -8,7 +8,7 @@ import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = "", 
-         actorNum = 95, nobleNum = 5, moneyPerActor = 100):
+         actorNum = 95, nobleNum = 5, moneyPerActor = 1000, rounds = 100000, taxMod = 0.3):
     actors = [];
     for i in range(actorNum):
         actors.append(actor.actor(moneyPerActor));
@@ -40,6 +40,8 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     cci = []; # consumer confidence index.  Measures proportion of actors willing to bid for luxury goods.
     tax = [0,0,0];
     
+    jewelersCanBuyLux = False;
+    
     # If incomeTax is true, then income taxes are used.  If false, then VAT tax is used.
     #incomeTax = True;
     
@@ -57,7 +59,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         actualTaxThresholds.append([]);
     
     # Run loops (with fancy progress display)
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(rounds)):
         for a in actors:
             a.beforeTrades(i);
         
@@ -108,16 +110,17 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                         if (numToSell != 0):
                             prodCost = int(max((lastPrices[0] + lastPrices[1] + r.randint(-2,2)) / numToSell * (1 + tax[2]), 1));
                             prodCosts.extend([[randint(prodCost, lastPrices[2] + 5), a]] * numToSell);
-                    numToBuy = 1;
-                    if (a.type == 3):
-                        numToBuy = int(max(1, a.gold/lastPrices[2] - 1));
-                        buyerValues.extend([[a.getValue(j, lastPrices, incomeTax)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
-                        cci[-1] += 1;
-                    else:
-                        luxVal = a.getValue(j, lastPrices, incomeTax);
-                        if (luxVal > 0):
-                            buyerValues.append([luxVal, a]);
+                    elif (a.type != 2 or jewelersCanBuyLux):
+                        numToBuy = 1;
+                        if (a.type == 3):
+                            numToBuy = int(max(1, a.gold/lastPrices[2] - 1));
+                            buyerValues.extend([[a.getValue(j, lastPrices, incomeTax)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
                             cci[-1] += 1;
+                        else:
+                            luxVal = a.getValue(j, lastPrices, incomeTax);
+                            if (luxVal > 0):
+                                buyerValues.append([luxVal, a]);
+                                cci[-1] += 1;
             cci[-1] = cci[-1]/totPop;
             allProduced[j].append(len(prodCosts));
             allWanted[j].append(len(buyerValues));
@@ -185,7 +188,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
         
         # Adjust tax rate to support noble spending
         if (not incomeTax):
-            mod = 0.5;
+            mod = taxMod;
             if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
                 mod = 1.25;
             for taxType in range(len(tax)):
@@ -218,7 +221,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 act.lastTax = newTax
                 act.lastIncome = 0;
             
-            mod = 0.5 # as mod increases, nobles get less money from taxes
+            mod = taxMod; # as mod increases, nobles get less money from taxes
             if (len(totGoldarray[0]) > 0 and totGoldarray[4][-1]/totGoldarray[0][-1] > 0.5):
                 mod = 1.25;
                 #print("oh no")
@@ -227,8 +230,8 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 if (taxRevs[-1] < 1 and initITP[taxType] > 0): # and nobleSpending[-1] != 0):
                     curITP[taxType] = initITP[taxType];
                 else:
-                    curITP[taxType] *= nobleSpending[-1]/max(mod * taxRevs[-1],1); #1.013 good for VAT
-                    #print(curITP[taxType])
+                    curITP[taxType] *= nobleSpending[-1]/max(mod * taxRevs[-1],1); #1.013 good for sales tax
+                curITP[taxType] = min(curITP[taxType], 4)
                 if (taxType != 0):
                     taxes[taxType-1].append(curITP[taxType]);
         
@@ -373,49 +376,70 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     
     plt.figure(11);
     if (not long):
-        plt.plot(ma(gdp), label = "GDP");
+        plt.plot(ma(gdp), label = "GDP US");
         plt.plot(ma(investSpend), label = "Investment Spending");
         plt.plot(ma(conSpend), label = "Consumer Spending");
         plt.plot(ma(govSpend), label = "Government Spending");
-    plt.plot(ma(gdp, 500), label = (name + " Very Smoothed GDP"))
+    plt.title("Nominal GDP Over Time");
+    plt.xlabel("Round");
+    plt.ylabel("Nominal GDP ($)");
+    plt.plot(ma(gdp, 2500), label = (name + " GDP"))
     plt.legend();
     plt.ylim(ymin=0, ymax = 3000);
+    plt.grid(True);
     plt.show();
-    
-    print(sum(gdp)/len(gdp))
     
     plt.figure(12);
     if (not long):
-        plt.plot(ma(ppp), label = "rGDP")
-    plt.plot(ma(ppp, 500), label = (name + " Very Smoothed rGDP"))
+        plt.plot(ma(ppp), label = "rGDP US")
+    plt.plot(ma(ppp, 2500), label = (name + " rGDP"))
     plt.legend();
+    plt.title("rGDP Over Time");
+    plt.xlabel("Round");
+    plt.ylabel("Real Per-Capita GDP (Units of Food)");
     plt.ylim(ymin=0.75, ymax = 3.25);
+    plt.grid(True);
     plt.show();
     
     plt.figure(16);
     if (not long):
-        plt.plot(ma(cci), label = "CCI")
-    plt.plot(ma(cci, 500), label = (name + " Very Smoothed CCI"))
+        plt.plot(ma(cci), label = "CCI US")
+    plt.plot(ma(cci, 2500), label = (name + " CCI"));
+    plt.title("CCI Over Time");
+    plt.xlabel("Round");
+    plt.ylabel("Consumer Confidence Index");
     plt.legend();
     plt.ylim(ymin=0, ymax = 1);
+    plt.grid(True);
     plt.show();
     
     plt.figure(7);
     #lbs = ["Starved", "NEL", "F->S", "S->J", "J->N"];
     #for i in range(5):
     #    plt.plot(ma(movements[i]),label = lbs[i]);
-    plt.plot(ma([movements[0][i] / (totPop - allPops[0][i]) for kek in range(len(movements[0]))], 500),label = (name + " Starvation Index"));
+    plt.plot(ma([movements[0][i] / (totPop - allPops[0][i]) for kek in range(len(movements[0]))], 100),label = (name + " Starvation Index"));
     plt.legend();
     plt.ylim(ymin=0, ymax=0.5);
+    plt.title("Starvation Index Over Time");
+    plt.xlabel("Round");
+    plt.ylabel("Starvation Index");
+    plt.grid(True);
     plt.show();
     
     plt.figure(15);
-    plt.plot(ma([(allPops[1][i] + allPops[2][i] * 2) / totPop for i in range(len(allPops[1]))], 500), label = (name + " Job Quality Index"))
+    jqi=[(allPops[1][i] + allPops[2][i] * 2) / totPop for i in range(len(allPops[1]))]
+    plt.plot(ma(jqi, 2500), label = (name + " Job Quality Index"))
     plt.legend();
     plt.ylim(ymin=0, ymax = 1);
+    plt.title("Job Quality Index Over Time");
+    plt.xlabel("Round");
+    plt.ylabel("Job Quality Index");
+    plt.grid(True);
     plt.show();
     
-    print(sum(ppp)/len(ppp))
+    print(name + " avg gdp: " + str(sum(gdp)/len(gdp)))
+    print(name + " avg rgdp: " + str(sum(ppp)/len(ppp)))
+    print(name + " avg jqi: " + str(sum(jqi)/len(jqi)))
     
 def bubble_sort(nums):
     # We set swapped to True so the loop looks runs at least once
@@ -448,19 +472,24 @@ def ma(a, n=25):
 #main();
     
 # Main simulation
-#main(long = True, incomeTax = True, initITP = [0, 0.25], incomeTaxThresholds=[0.75], name = "Just rich");
-#main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal");
-#main(long = True, incomeTax = True, initITP = [0, 0.2, 0.7], name = "Progressive");
-#main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Tax the poor!");
+main(long = True, incomeTax = True, initITP = [0, 0.1], incomeTaxThresholds=[0.8], name = "Wealthiest 25% Income Tax", taxMod = 0.3);
+main(long = True, incomeTax = True, initITP = [0, 0.1, 0.3], name = "Progressive Income Tax", taxMod = 0.5);
+main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal Income Tax", taxMod = 0.5);
+main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Poorest 50% Income Tax", taxMod = 0.3);
 
-#main(long = False, incomeTax = False, toTax = [True, False, False], name = "Just Food");
-#main(long = True, incomeTax = False, toTax = [False, True, False], name = "Just Tools");
-#main(long = True, incomeTax = False, toTax = [False, False, True], name = "Just Lux");
-#main(long = True, incomeTax = False, toTax = [True, True, True], name = "All Goods");
+main(long = True, incomeTax = False, toTax = [True, False, False], name = "Sales Tax - Just Food", taxMod = 0.1);
+main(long = True, incomeTax = False, toTax = [False, True, False], name = "Sales Tax - Just Tools", taxMod = 0.1);
+main(long = True, incomeTax = False, toTax = [False, False, True], name = "Sales Tax - Just Luxuries");
+main(long = True, incomeTax = False, toTax = [True, True, True], name = "Sales Tax - All Goods");
     
 # Larger vs Smaller Market (more/less actors)
-main(long = True, incomeTax = False, toTax = [False, False, False], name = "10 Actors", actorNum = 10, nobleNum = 0, moneyPerActor=100);
-main(long = True, incomeTax = False, toTax = [False, False, False], name = "100 Actors", actorNum = 100, nobleNum = 0, moneyPerActor=100);
-main(long = True, incomeTax = False, toTax = [False, False, False], name = "1000 Actors", actorNum = 1000, nobleNum = 0, moneyPerActor=100);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "10 Actors", actorNum = 10, nobleNum = 0, moneyPerActor=100);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "100 Actors", actorNum = 100, nobleNum = 0, moneyPerActor=100);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "1000 Actors", actorNum = 1000, nobleNum = 0, moneyPerActor=100);
+
 # Finer/coarser money (more/less money per actor)
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "$10/Actor", actorNum = 100, nobleNum = 0, moneyPerActor=10);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "$100/Actor", actorNum = 100, nobleNum = 0, moneyPerActor=100);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "$1,000/Actor", actorNum = 100, nobleNum = 0, moneyPerActor=1000);
+#main(long = True, incomeTax = False, toTax = [False, False, False], name = "$10,000/Actor", actorNum = 100, nobleNum = 0, moneyPerActor=10000);
         
