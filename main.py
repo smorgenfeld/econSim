@@ -8,7 +8,7 @@ import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = "", 
-         actorNum = 95, nobleNum = 5, moneyPerActor = 1000, rounds = 100000, taxMod = 0.3):
+         actorNum = 95, nobleNum = 5, moneyPerActor = 1000, rounds = 50000, taxMod = 0.3):
     actors = [];
     for i in range(actorNum):
         actors.append(actor.actor(moneyPerActor));
@@ -89,7 +89,13 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                             prodCost = max(int(lastPrices[1] / numSelling * (1 + tax[0])), 1);
                         prodCosts.extend([[prodCost, a]] * numSelling);
                     else:
-                        buyerValues.append([a.getValue(j, lastPrices, incomeTax), a]);
+                        buyPrice = a.getValue(j, lastPrices, incomeTax);
+                        buyPriceRatio = int(buyPrice / lastPrices[0]);
+                        if (buyPriceRatio > 4 and True):
+                            buyerValues.append([buyPrice / 2, a]);
+                            buyerValues.append([buyPrice / 4, a] * 2);
+                        else:
+                            buyerValues.append([buyPrice / 2, a]);
                 # tool auction
                 elif (j == 1):
                     if (a.type == 1):
@@ -113,7 +119,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                     elif (a.type != 2 or jewelersCanBuyLux):
                         numToBuy = 1;
                         if (a.type == 3):
-                            numToBuy = int(max(1, a.gold/lastPrices[2] - 1));
+                            numToBuy = int(max(1, (a.gold - lastPrices[0] * 3)/lastPrices[2] - 1));
                             buyerValues.extend([[a.getValue(j, lastPrices, incomeTax)/(numToBuy * r.randint(1, 2)), a]] * numToBuy);
                             cci[-1] += 1;
                         else:
@@ -160,7 +166,6 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                 for b in range(len(buyerValues)):
                     if (buyerValues[b][0] >= curPrices[j] and prodCosts[b][0] <= curPrices[j]):
                         buyerValues[b][1].gold -= curPrices[j];
-                        
                         # Add transaction to gdp
                         gdp[-1] += curPrices[j];
                         if (j != 1 and buyerValues[b][1].type != 3):
@@ -375,6 +380,8 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
             plt.show();
     
     plt.figure(11);
+    
+    smoothing = 2500;
     if (not long):
         plt.plot(ma(gdp), label = "GDP US");
         plt.plot(ma(investSpend), label = "Investment Spending");
@@ -383,7 +390,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     plt.title("Nominal GDP Over Time");
     plt.xlabel("Round");
     plt.ylabel("Nominal GDP ($)");
-    plt.plot(ma(gdp, 2500), label = (name + " GDP"))
+    plt.plot(ma(gdp, smoothing), label = (name + " GDP"))
     plt.legend();
     plt.ylim(ymin=0, ymax = 3000);
     plt.grid(True);
@@ -392,7 +399,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     plt.figure(12);
     if (not long):
         plt.plot(ma(ppp), label = "rGDP US")
-    plt.plot(ma(ppp, 2500), label = (name + " rGDP"))
+    plt.plot(ma(ppp, smoothing), label = (name + " rGDP"))
     plt.legend();
     plt.title("rGDP Over Time");
     plt.xlabel("Round");
@@ -404,7 +411,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     plt.figure(16);
     if (not long):
         plt.plot(ma(cci), label = "CCI US")
-    plt.plot(ma(cci, 2500), label = (name + " CCI"));
+    plt.plot(ma(cci, smoothing), label = (name + " CCI"));
     plt.title("CCI Over Time");
     plt.xlabel("Round");
     plt.ylabel("Consumer Confidence Index");
@@ -428,7 +435,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     
     plt.figure(15);
     jqi=[(allPops[1][i] + allPops[2][i] * 2) / totPop for i in range(len(allPops[1]))]
-    plt.plot(ma(jqi, 2500), label = (name + " Job Quality Index"))
+    plt.plot(ma(jqi, smoothing), label = (name + " Job Quality Index"))
     plt.legend();
     plt.ylim(ymin=0, ymax = 1);
     plt.title("Job Quality Index Over Time");
