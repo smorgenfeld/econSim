@@ -8,7 +8,7 @@ import actor, random as r, matplotlib.pyplot as plt, numpy as np;
 from tqdm import tqdm
 
 def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9], incomeTaxThresholds = [0.33, 0.66], long = False, name = "", 
-         actorNum = 95, nobleNum = 5, moneyPerActor = 1000, rounds = 50000, taxMod = 0.3):
+         actorNum = 95, nobleNum = 5, moneyPerActor = 1000, rounds = 100000, taxMod = 0.3):
     actors = [];
     for i in range(actorNum):
         actors.append(actor.actor(moneyPerActor));
