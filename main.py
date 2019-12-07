@@ -91,7 +91,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
                     else:
                         buyPrice = a.getValue(j, lastPrices, incomeTax);
                         buyPriceRatio = int(buyPrice / lastPrices[0]);
-                        if (buyPriceRatio > 4 and True):
+                        if (buyPriceRatio > 4):
                             buyerValues.append([buyPrice / 2, a]);
                             buyerValues.append([buyPrice / 4, a] * 2);
                         else:
@@ -381,7 +381,7 @@ def main(incomeTax = True, toTax = [True, True, True], initITP = [0, 0.25, 0.9],
     
     plt.figure(11);
     
-    smoothing = 2500;
+    smoothing = 250;
     if (not long):
         plt.plot(ma(gdp), label = "GDP US");
         plt.plot(ma(investSpend), label = "Investment Spending");
@@ -479,16 +479,16 @@ def ma(a, n=25):
 #main();
     
 # Main simulation
-main(long = True, incomeTax = True, initITP = [0, 0.1], incomeTaxThresholds=[0.8], name = "Wealthiest 25% Income Tax", taxMod = 0.3);
-main(long = True, incomeTax = True, initITP = [0, 0.1, 0.3], name = "Progressive Income Tax", taxMod = 0.5);
-main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal Income Tax", taxMod = 0.5);
-main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Poorest 50% Income Tax", taxMod = 0.3);
+#main(long = True, incomeTax = True, initITP = [0, 0.1], incomeTaxThresholds=[0.8], name = "Wealthiest 25% Income Tax", taxMod = 0.3);
+#main(long = True, incomeTax = True, initITP = [0, 0.1, 0.3], name = "Progressive Income Tax", taxMod = 0.5);
+#main(long = True, incomeTax = True, initITP = [0.1, 0.1, 0.1], name = "Equal Income Tax", taxMod = 0.5);
+#main(long = True, incomeTax = True, initITP = [1, 0], incomeTaxThresholds=[0.5], name = "Poorest 50% Income Tax", taxMod = 0.3);
 
-main(long = True, incomeTax = False, toTax = [True, False, False], name = "Sales Tax - Just Food", taxMod = 0.1);
-main(long = True, incomeTax = False, toTax = [False, True, False], name = "Sales Tax - Just Tools", taxMod = 0.1);
-main(long = True, incomeTax = False, toTax = [False, False, True], name = "Sales Tax - Just Luxuries");
-main(long = True, incomeTax = False, toTax = [True, True, True], name = "Sales Tax - All Goods");
-    
+#main(long = True, incomeTax = False, toTax = [True, False, False], name = "Sales Tax - Just Food", taxMod = 0.1);
+#main(long = True, incomeTax = False, toTax = [False, True, False], name = "Sales Tax - Just Tools", taxMod = 0.1);
+#main(long = True, incomeTax = False, toTax = [False, False, True], name = "Sales Tax - Just Luxuries", taxMod = 0.1);
+#main(long = True, incomeTax = False, toTax = [True, True, True], name = "Sales Tax - All Goods", taxMod = 0.1);
+main(long = False, incomeTax = False, toTax = [False, False, True], name = "Sales Tax - Just Luxuries", rounds=10000);   
 # Larger vs Smaller Market (more/less actors)
 #main(long = True, incomeTax = False, toTax = [False, False, False], name = "10 Actors", actorNum = 10, nobleNum = 0, moneyPerActor=100);
 #main(long = True, incomeTax = False, toTax = [False, False, False], name = "100 Actors", actorNum = 100, nobleNum = 0, moneyPerActor=100);
